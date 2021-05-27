@@ -1,163 +1,154 @@
 clear all;
 clear all figures;
-%% 7.2 Single canceller
+%% 6.1 Samples at the output of a square law detector
+%INPUTS: Number of samples
+%OUTPUT: square law detector signal
 %--> i n p u t s a j u s t a b l e s
-N_samples=10001;
-repetitions=100;
-PRF=1*10^3 ;%kHz
-pot_noise=1; %1W
-mean_=0;
+k=1.38064852e-23; %Bolzmann constant
+To=300; %K
+B=1e6; %MHz
+N_samples=10000;
 %--> e x e c u c i ó
-sample_noise=randn(repetitions,N_samples)+mean_;
-for i=1:repetitions
-    Pot=sum(abs(sample_noise(i,:)).^2)/N_samples;
-    noise_2(i,:)=sqrt(pot_noise)*sample_noise(i,:)./sqrt(Pot);
-    for j=2:N_samples
-        MTI_filter_single(i,j-1)=noise_2(i,j)-noise_2(i,j-1);
-    end
-end
-MTI_filter_single_meanvalues=mean(MTI_filter_single(:,(1:length(MTI_filter_single))));
-MTI_fft_single=abs(fft(MTI_filter_single,[],2));
-%MTI_mean_single1=sum(MTI_fft_single(:,(1:length(MTI_fft_single))))/re
-p;
-MTI_mean_single=mean(MTI_fft_single(:,(1:length(MTI_fft_single))));
-MTI_mean_max_single=max(MTI_mean_single);
-noise_meanvalues=mean(noise_2(:,(1:length(noise_2))));
-noise_fft=abs(fft(noise_2,[],2));
-noise_mean=mean(noise_fft(:,(1:N_samples)));
-%% 7.2 PLOTS
-%SAMPLES PLOTS
-%PLOTTING INPUT
+noise=k*To*B;
+noise_factor_inphase=randn(1,N_samples);
+Pot_ni=sum((abs(noise_factor_inphase)).^2)/N_samples;
+noise_inphase=sqrt(noise).*noise_factor_inphase./sqrt(Pot_ni);
+noise_factor_quadrature=randn(1,N_samples);
+Pot_nq=sum((abs(noise_factor_quadrature)).^2)/N_samples;
+noise_quadrature=sqrt(noise).*noise_factor_quadrature./sqrt(Pot_nq);
 figure(1);
-subplot(1,2,1);
-plot(noise_meanvalues);
-xlabel('Number of Samples');
-ylabel('Noise (V)');
-title('MTI input for single canceller');
-%PLOTTING OUTPUT
-subplot(1,2,2);
-plot(MTI_filter_single_meanvalues);
-xlabel('Number of Samples');
-ylabel('Noise (V)');
-title('MTI output for single canceller');
-%SPECTRUM PLOTS
-%PLOTTING INPUT
+histogram(noise_inphase,'Normalization','pdf');
+xlabel('Inphase noise');
+ylabel('PDF of inphase noise');
 figure(2);
-subplot(1,2,1);
-freq=(0:N_samples-1)/N_samples*PRF;
-plot(freq,noise_mean);
-xlabel('Frequency (Hz)');
-ylabel('Noise (V)');
-title('Spectrum MTI input for single canceller');
-%PLOTTING OUTPUT
-subplot(1,2,2);
-freq=(0:length(MTI_mean_single)-1)/N_samples*PRF;
-plot(freq, MTI_mean_single);
-xlabel('Frequency (Hz)');
-ylabel('Noise (V)');
-title('Spectrum MTI output for single canceller');
-%% 7.3 Improving single canceller
-%--> i n p u t s a j u s t a b l e s
-N_samples=10001;
-repetitions=1000;
-PRF=1*10^3 ;%kHz
-pot_noise=1; %1W
-mean_=0;
-%--> e x e c u c i ó
-sample_noise=randn(repetitions,N_samples)+mean_;
-for i=1:repetitions
-    Pot=sum(abs(sample_noise(i,:)).^2)/N_samples;
-    noise_2(i,:)=sqrt(pot_noise)*sample_noise(i,:)./sqrt(Pot);
-    for j=2:N_samples
-        MTI_filter_single(i,j-1)=noise_2(i,j)-noise_2(i,j-1);
-    end
-end
-MTI_filter_single_meanvalues=mean(MTI_filter_single(:,(1:length(MTI_filter_single))));
-MTI_fft_single=abs(fft(MTI_filter_single,[],2));
-%MTI_mean_single1=sum(MTI_fft_single(:,(1:length(MTI_fft_single))))/re
-p;
-MTI_mean_single=mean(MTI_fft_single(:,(1:length(MTI_fft_single))));
-MTI_mean_max_single=max(MTI_mean_single);
-noise_meanvalues=mean(noise_2(:,(1:length(noise_2))));
-noise_fft=abs(fft(noise_2,[],2));
-noise_mean=mean(noise_fft(:,(1:N_samples)));
-%% 7.3 PLOTS
-%SPECTRUM PLOTS
-%PLOTTING INPUT
+histogram(noise_quadrature,'Normalization','pdf');
+xlabel('Quadrature noise');
+ylabel('PDF of quadrature noise');
+y=noise_inphase.^2+noise_quadrature.^2;
 figure(3);
-subplot(1,2,1);
-freq=(0:N_samples-1)/N_samples*PRF;
-plot(freq,noise_mean);
-xlabel('Frequency (Hz)');
-ylabel('Noise (V)');
-title('Spectrum MTI input for single canceller');
-%PLOTTING OUTPUT
-subplot(1,2,2);
-freq=(0:length(MTI_mean_single)-1)/N_samples*PRF;
-plot(freq, MTI_mean_single/MTI_mean_max_single);
-xlabel('Frequency (Hz)');
-ylabel('Noise (V)');
-title('Spectrum MTI output for single canceller');
-hold on;
-y=2*abs(sin(1/PRF*pi*freq))/2;
-plot(freq, y);
-legend('Experimental Output', 'Theoretical Output');
-hold off;
-%% 7.4 Double canceller
+histogram(y,'Normalization','pdf');
+xlabel('Square law dectector signal');
+ylabel('PDF of square law dectector signal');
+%% 6.2 Scaling factor alpha for a given Pfa
+%---------INPUTS-----------
+% Number of samples
+% Prob of False Alarm
+% Training cells
+%---------OUTPUT-------------
+% Threshold vector
+% Number of Pfa
+% False alarm probability=Number of Pfa/Number of samples
+k=1.38064852e-23; %Bolzmann constant
 %--> i n p u t s a j u s t a b l e s
-N_samples=10001;
-repetitions=1000;
-PRF=1*10^3 ;%kHz
-pot_noise=1; %1W
-mean_=0;
+P_fa=0.01; %Prob of False Alarm
+M=40; %Training cells
+To=300; %[K]
+B=1e6; %[MHz]
+N_samples=10000; %Number of samples
 %--> e x e c u c i ó
-sample_noise=randn(repetitions,N_samples)+mean_;
-for i=1:repetitions
-    Pot=sum(abs(sample_noise(i,:)).^2)/N_samples;
-    noise_2(i,:)=sqrt(pot_noise)*sample_noise(i,:)./sqrt(Pot);
-    for j=3:N_samples
-        MTI_filter_double(i,j-2)=noise_2(i,j)-2*noise_2(i,j-1)+noise_2(i,j-2);
+noise=k*To*B;
+% Knowing that Pfa=1/((1+alpha/M)^M --> isolating alpha
+alpha=M*(1/(((P_fa)^(1/M)))-1);
+%% 6.3 Simulation of the CA-CFAR for a single Pfa
+%--> e x e c u c i ó
+%OUTPUT of SQUARE LAW DECTECTOR
+n_i=randn(M+1,N_samples);
+n_q=randn(M+1,N_samples);
+for i=1:M+1
+    Pot_ni=sum(abs(n_i(i,:)).^2)/N_samples;
+    n_i_2=sqrt(noise).*n_i(i,:)/sqrt(Pot_ni);
+    Pot_nq=sum(abs(n_q(i,:)).^2)/N_samples;
+    n_q_2=sqrt(noise).*n_q(i,:)/sqrt(Pot_nq);
+    y(i,:)=n_q_2.^2+n_i_2.^2;
+end
+%THRESHOLD COMPUTATION
+for(i=1:N_samples)
+    anterior=sum(y(1:M/2,i));
+    posterior=sum(y(M/2+2:M,i));
+    suma_total(i)=sum([anterior posterior]);
+    llindar(i)=alpha/M*suma_total(i);
+end
+%COMPARISON TO KNOW IF ITS A TARGET
+Pfa_vector=zeros(1,N_samples);
+Pfa_counter=0;
+for i=1:N_samples
+    if(llindar(i)<y(M/2+1,i))
+        Pfa_vector(i)=1;
+        Pfa_counter=Pfa_counter+1;
+    else
+        Pfa_vector(i)=0;
     end
 end
-MTI_filter_double_meanvalues=mean(MTI_filter_double(:,(1:length(MTI_filter_double))));
-MTI_fft_double=abs(fft(MTI_filter_double,[],2));
-MTI_mean_double=mean(MTI_fft_double(:,(1:length(MTI_fft_double))));
-MTI_mean_max_double=max(MTI_mean_double);
-noise_meanvalues_double=mean(noise_2(:,(1:length(noise_2))));
-noise_fft_double=abs(fft(noise_2,[],2));
-noise_mean_double=mean(noise_fft_double(:,(1:N_samples)));
-%% 7.4 PLOTS
-%SAMPLES PLOTS
-figure(4);
-subplot(1,2,1);
-plot(noise_meanvalues_double);
-xlabel('Number of Samples');
-ylabel('Noise (V)');
-title('MTI input for double canceller');
-%PLOTTING OUTPUT
-subplot(1,2,2);
-plot(MTI_filter_double_meanvalues);
-xlabel('Number of Samples');
-ylabel('Noise (V)');
-title('MTI output for double canceller');
-% SPECTRUM PLOTS
-%PLOTTING INPUT
-figure(5);
-subplot(1,2,1);
-freq=(0:N_samples-1)/N_samples*PRF;
-plot(freq,noise_mean_double);
-xlabel('Frequency (Hz)');
-ylabel('Noise (V)');
-title('Spectrum MTI input for double canceller');
-%PLOTTING OUTPUT
-subplot(1,2,2);
-freq=(0:length(MTI_mean_double)-1)/N_samples*PRF;
-plot(freq, MTI_mean_double/MTI_mean_max_double);
+%PLOT CUT AND THRESHOLD
+plot(20*log10(llindar));
 hold on;
-y=4/4*abs(sin(1/PRF*pi*freq)).^2;
-plot(freq, y);
+plot(20*log10(y(M/2+1,:)));
+xlabel('Number of samples');
+ylabel('Level of noise (dB)');
+legend('Threshold (dB)','CUT (dB)');
 hold off;
-xlabel('Frequency (Hz)');
-ylabel('Noise (V)');
-title('Spectrum MTI output for double canceller');
-legend('Experimental Output', 'Theoretical Output');
+title('CUT and threshold coexistance');
+%False alarm probability=Number of Pfa/Number of samples
+Pfa_obtained=Pfa_counter/N_samples;
+%% 6.4 ROUTINE for different Pfa
+%---------INPUTS-----------
+% Number of samples
+% Prob of False Alarm
+% Training cells
+%---------OUTPUT-------------
+% Threshold vector
+% CUT vector
+% Number of Pfa
+% False alarm probability=Number of Pfa/Number of samples
+M=40;
+k=1.38064852e-23; %Bolzmann constant
+To=300; %K
+B=1e6; %MHz
+N_samples=10000;
+noise=k*To*B;
+P_fa=[0.1 0.001 0.0001];
+[Pfa_obtained, llindar, CUT, Pfa_counter]=CFAR(M,N_samples,P_fa,noise);
+for i=1:length(P_fa)
+    figure(i);
+    plot(20*log10(llindar(i,:)));
+    hold on;
+    plot(20*log10(CUT));
+    xlabel('Number of samples');
+    ylabel('Level of noise (dB)');
+    legend('Threshold (dB)','CUT (dB)');
+    hold off;
+    title(sprintf('CUT and threshold coexistance for probability of FA=
+    %g',P_fa(i)));
+end
+FUNCTION: CFAR
+function [Pfa_obtained, llindar, CUT,
+    Pfa_counter]=CFAR(M,N_samples,P_fa,noise)
+alpha=M*(1./(((P_fa).^(1/M)))-1);
+n_i=randn(M+1,N_samples);
+n_q=randn(M+1,N_samples);
+for i=1:M+1
+    Pot_ni=sum(abs(n_i(i,:)).^2)/N_samples;
+    n_i_2=sqrt(noise).*n_i(i,:)/sqrt(Pot_ni);
+    Pot_nq=sum(abs(n_q(i,:)).^2)/N_samples;
+    n_q_2=sqrt(noise).*n_q(i,:)/sqrt(Pot_nq);
+    y(i,:)=n_q_2.^2+n_i_2.^2;
+end
+for i=1:N_samples
+    anterior=sum(y(1:M/2,i));
+    posterior=sum(y(M/2+2:M,i));
+    suma_total(i)=sum([anterior posterior]);
+    llindar(:,i)=alpha./M*suma_total(i);
+end
+for j=1:length(alpha)
+    Pfa_counter(j)=0;
+    for i=1:N_samples
+        if(llindar(j,i)<y(M/2+1,i))
+            Pfa_vector(j,i)=1;
+            Pfa_counter(j)=Pfa_counter(j)+1;
+        else
+            Pfa_vector(j,i)=0;
+        end
+    end
+end
+CUT=y(M/2+1,:);
+Pfa_obtained=Pfa_counter/N_samples;

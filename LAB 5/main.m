@@ -1,154 +1,199 @@
 clear all;
 clear all figures;
-%% 6.1 Samples at the output of a square law detector
-%INPUTS: Number of samples
-%OUTPUT: square law detector signal
+%% 5.1 RCS of an sphere --> dependency: frequency of the radar
+%% 5.2 RCS of a circular flat plate --> dependency: aspect angle
+%INPUTS: frequency [Hz], radius [m]
+%OUTPUT: aspect angle [º], RCS [dB]
+r=10000;
+freq=10;
+[vaspect_deg, rcs_dB] = rcs_circ_plate (r, freq);
+lambda=3e8/freq;
+area=pi*r^2;
+%comprovem que per theta=0º-->RCS=(4pi*Area^2)/(lambda^2)
+normal_incidence_RCS=10*log10((4*pi*area^2)/(lambda^2));
+%% 5.4 Two spheres RCS
+%==============RCS COMPUTATION FUNCTION====================
+%-----I N P U T S------
+%RCS_scatters = Column vector of RCSs of spheres [dBsm=dBm2]
+%scatters_rect_coord = Matrix having the rectangular coordinates of the
+scatterers positions:
+% x-coordinates in first column [m]
+% y-coordinates in second column [m]
+% z-coordinates in third column [m]
+%radar_sphere_coord = Matrix having the spherical coordinates of the
+different radar locations
+% r-coordinates in first column [m]
+% theta-coordinates in second column [rad]
+% phi-coordinates in third column [rad]
+%carrier_freq=Carrier frequency [Hz]
+%-----O U T P U T S------
+% monostatic_RCS = Column vector of monostatic RCSs seen from the
+different radar locations [m^2]
+%==============FOR ONE VALUE OF L==========================
 %--> i n p u t s a j u s t a b l e s
-k=1.38064852e-23; %Bolzmann constant
-To=300; %K
-B=1e6; %MHz
-N_samples=10000;
+L=1; %-->electrical separation between scatters
+carrier_freq=1.5*10^9;
+RCS_scatters=[0,0]; %0dBsm-->1m^2 isotropical scatters
+%coordinates of scatters
+scatters_rect_coord=[-L/2 0 0; L/2 0 0];
+%coordinates of radars
+r_gran=10^6;
+if(r_gran<(2*L^2)*carrier_freq/(3e8)) % condition to fulfill
+    r_gran<(2L^2/lambda)
+    disp('Distance between scatters and radar stations too small.');
+end
+theta=pi/2; %-->horizontal plane
+phi=0:pi/1000:2*pi; %--> all angles of the horizontal plane
 %--> e x e c u c i ó
-noise=k*To*B;
-noise_factor_inphase=randn(1,N_samples);
-Pot_ni=sum((abs(noise_factor_inphase)).^2)/N_samples;
-noise_inphase=sqrt(noise).*noise_factor_inphase./sqrt(Pot_ni);
-noise_factor_quadrature=randn(1,N_samples);
-Pot_nq=sum((abs(noise_factor_quadrature)).^2)/N_samples;
-noise_quadrature=sqrt(noise).*noise_factor_quadrature./sqrt(Pot_nq);
+for i=1:length(phi)
+    radar_sphere_coord(i,:)=[r_gran theta phi(i)];
+end
+monostatic_RCS=RCS_computation(RCS_scatters,scatters_rect_coord,radar_sphere_coord,carrier_freq);
 figure(1);
-histogram(noise_inphase,'Normalization','pdf');
-xlabel('Inphase noise');
-ylabel('PDF of inphase noise');
+plot(phi,10*log10(monostatic_RCS)); %RCS [dBsm]
+xlabel('Phi angle (rad)');
+ylabel('RCS (dBsm)');
+str = sprintf('Resulting RCS for two spheres (1m^2) separated %0.2fm',L);
+title(str);
 figure(2);
-histogram(noise_quadrature,'Normalization','pdf');
-xlabel('Quadrature noise');
-ylabel('PDF of quadrature noise');
-y=noise_inphase.^2+noise_quadrature.^2;
-figure(3);
-histogram(y,'Normalization','pdf');
-xlabel('Square law dectector signal');
-ylabel('PDF of square law dectector signal');
-%% 6.2 Scaling factor alpha for a given Pfa
-%---------INPUTS-----------
-% Number of samples
-% Prob of False Alarm
-% Training cells
-%---------OUTPUT-------------
-% Threshold vector
-% Number of Pfa
-% False alarm probability=Number of Pfa/Number of samples
-k=1.38064852e-23; %Bolzmann constant
+polarplot(phi,monostatic_RCS); %RCS [m^2]
+str = sprintf('Resulting RCS for two spheres (1m^2) separated %0.2fm',L);
+title(str);
+%===============FOR DIFFERENT VALUES OF L=====================
 %--> i n p u t s a j u s t a b l e s
-P_fa=0.01; %Prob of False Alarm
-M=40; %Training cells
-To=300; %[K]
-B=1e6; %[MHz]
-N_samples=10000; %Number of samples
-%--> e x e c u c i ó
-noise=k*To*B;
-% Knowing that Pfa=1/((1+alpha/M)^M --> isolating alpha
-alpha=M*(1/(((P_fa)^(1/M)))-1);
-%% 6.3 Simulation of the CA-CFAR for a single Pfa
-%--> e x e c u c i ó
-%OUTPUT of SQUARE LAW DECTECTOR
-n_i=randn(M+1,N_samples);
-n_q=randn(M+1,N_samples);
-for i=1:M+1
-    Pot_ni=sum(abs(n_i(i,:)).^2)/N_samples;
-    n_i_2=sqrt(noise).*n_i(i,:)/sqrt(Pot_ni);
-    Pot_nq=sum(abs(n_q(i,:)).^2)/N_samples;
-    n_q_2=sqrt(noise).*n_q(i,:)/sqrt(Pot_nq);
-    y(i,:)=n_q_2.^2+n_i_2.^2;
-end
-%THRESHOLD COMPUTATION
-for(i=1:N_samples)
-    anterior=sum(y(1:M/2,i));
-    posterior=sum(y(M/2+2:M,i));
-    suma_total(i)=sum([anterior posterior]);
-    llindar(i)=alpha/M*suma_total(i);
-end
-%COMPARISON TO KNOW IF ITS A TARGET
-Pfa_vector=zeros(1,N_samples);
-Pfa_counter=0;
-for i=1:N_samples
-    if(llindar(i)<y(M/2+1,i))
-        Pfa_vector(i)=1;
-        Pfa_counter=Pfa_counter+1;
-    else
-        Pfa_vector(i)=0;
+L=[1 0.1 0.01];
+j=1;
+carrier_freq=1.5*10^9;
+while(j<=length(L))
+    RCS_scatters=[0,0]; %0dBsm-->1m^2
+    scatters_rect_coord=[-L(j)/2 0 0; L(j)/2 0 0];
+    r_gran=10^6;
+    theta=pi/2;
+    phi=0:pi/1000:2*pi;
+    %--> e x e c u c i ó
+    for i=1:length(phi)
+        radar_sphere_coord(i,:)=[r_gran theta phi(i)];
     end
+    monostatic_RCS=RCS_computation(RCS_scatters,scatters_rect_coord,radar_sphere_coord,carrier_freq);
+    figure(3);
+    subplot(length(L),2,j+(j-1))
+    plot(phi,10*log10(monostatic_RCS)); %RCS [dBsm]
+    xlabel('Phi angle (rad)');
+    ylabel('RCS (dBsm)');
+    subplot(length(L),2,(j+1)+(j-1))
+    polarplot(phi,monostatic_RCS); %RCS [m^2]
+    str = sprintf('Resulting RCS for two spheres with 1m^2 separated %0.2f m',L(j));
+    title(str);
+    j=j+1;
 end
-%PLOT CUT AND THRESHOLD
-plot(20*log10(llindar));
-hold on;
-plot(20*log10(y(M/2+1,:)));
-xlabel('Number of samples');
-ylabel('Level of noise (dB)');
-legend('Threshold (dB)','CUT (dB)');
-hold off;
-title('CUT and threshold coexistance');
-%False alarm probability=Number of Pfa/Number of samples
-Pfa_obtained=Pfa_counter/N_samples;
-%% 6.4 ROUTINE for different Pfa
-%---------INPUTS-----------
-% Number of samples
-% Prob of False Alarm
-% Training cells
-%---------OUTPUT-------------
-% Threshold vector
-% CUT vector
-% Number of Pfa
-% False alarm probability=Number of Pfa/Number of samples
-M=40;
-k=1.38064852e-23; %Bolzmann constant
-To=300; %K
-B=1e6; %MHz
-N_samples=10000;
-noise=k*To*B;
-P_fa=[0.1 0.001 0.0001];
-[Pfa_obtained, llindar, CUT, Pfa_counter]=CFAR(M,N_samples,P_fa,noise);
-for i=1:length(P_fa)
-    figure(i);
-    plot(20*log10(llindar(i,:)));
-    hold on;
-    plot(20*log10(CUT));
-    xlabel('Number of samples');
-    ylabel('Level of noise (dB)');
-    legend('Threshold (dB)','CUT (dB)');
-    hold off;
-    title(sprintf('CUT and threshold coexistance for probability of FA=
-    %g',P_fa(i)));
+%% 5.5 Swerling model statistics I and II
+%==============RCS COMPUTATION FUNCTION====================
+%-----I N P U T S------
+%RCS_scatters = Column vector of RCSs of spheres [dBsm=dBm2]
+%scatters_rect_coord = Matrix having the rectangular coordinates of the
+scatterers positions:
+% x-coordinates in first column [m]
+% y-coordinates in second column [m]
+% z-coordinates in third column [m]
+%radar_sphere_coord = Matrix having the spherical coordinates of the
+different radar locations
+% r-coordinates in first column [m]
+% theta-coordinates in second column [rad]
+% phi-coordinates in third column [rad]
+%carrier_freq=Carrier frequency [Hz]
+%-----O U T P U T S------
+% monostatic_RCS = Column vector of monostatic RCSs seen from the
+different radar locations [m^2]
+%--> i n p u t s a j u s t a b l e s
+L=1;
+carrier_freq=3*10^9;
+num_scatters=10; %10 scatters in the scenario
+RCS_scatters=ones(1,num_scatters)*0.0000001; %dBsm RCSs close to 0 dBsm;
+%coordinates of scatters DISTRIBUTED RANDOMLY
+circle_radius=10; %circle of 10m
+r_scatter=0+circle_radius*rand(1,num_scatters);
+theta_scatter=ones(1,num_scatters)*pi/2;
+phi_scatter=0+2*pi*rand(1,num_scatters);
+x_scatter=r_scatter.*sin(theta_scatter).*cos(phi_scatter);
+y_scatter=r_scatter.*sin(theta_scatter).*sin(phi_scatter);
+z_scatter=r_scatter.*cos(theta_scatter);
+scatters_rect_coord=[x_scatter; y_scatter; z_scatter]';
+%coordinates of radar positions
+r_gran=1000; %1km
+theta=pi/2; %-->horizontal plane
+phi=0:pi/1000:2*pi;%--> all angles of the horizontal plane
+%--> e x e c u c i ó
+for i=1:length(phi)
+    radar_sphere_coord(i,:)=[r_gran theta phi(i)];
 end
-FUNCTION: CFAR
-function [Pfa_obtained, llindar, CUT,
-    Pfa_counter]=CFAR(M,N_samples,P_fa,noise)
-alpha=M*(1./(((P_fa).^(1/M)))-1);
-n_i=randn(M+1,N_samples);
-n_q=randn(M+1,N_samples);
-for i=1:M+1
-    Pot_ni=sum(abs(n_i(i,:)).^2)/N_samples;
-    n_i_2=sqrt(noise).*n_i(i,:)/sqrt(Pot_ni);
-    Pot_nq=sum(abs(n_q(i,:)).^2)/N_samples;
-    n_q_2=sqrt(noise).*n_q(i,:)/sqrt(Pot_nq);
-    y(i,:)=n_q_2.^2+n_i_2.^2;
+monostatic_RCS=RCS_computation(RCS_scatters,scatters_rect_coord,radar_sphere_coord,carrier_freq);
+figure(1);
+histogram(monostatic_RCS,'Normalization','pdf'); %RCS [m^2]
+data_hist_1=histcounts(monostatic_RCS,'Normalization','pdf');
+ylabel('RCS probability density function');
+xlabel('RCS (m^2)');
+title(sprintf('PDF of RCS resulting from %g spheres with 0dBsm distributed randomly',num_scatters));
+figure(2);
+subplot(2,1,1)
+plot(phi,10*log10(monostatic_RCS)); %RCS [dBsm]
+xlabel('Phi angle (rad)');
+ylabel('RCS (dBsm)');
+subplot(2,1,2)
+polarplot(phi,monostatic_RCS); %RCS [m^2]
+suptitle(sprintf('Resulting RCS for %g spheres with 0dBsm distributed randomly',num_scatters));
+%% 5.6 Swerling model statistics III and IV
+%==============RCS COMPUTATION FUNCTION====================
+%-----I N P U T S------
+%RCS_scatters = Column vector of RCSs of spheres [dBsm=dBm2]
+%scatters_rect_coord = Matrix having the rectangular coordinates of the
+scatterers positions:
+% x-coordinates in first column [m]
+% y-coordinates in second column [m]
+% z-coordinates in third column [m]
+%radar_sphere_coord = Matrix having the spherical coordinates of the
+different radar locations
+% r-coordinates in first column [m]
+% theta-coordinates in second column [rad]
+% phi-coordinates in third column [rad]
+%carrier_freq=Carrier frequency [Hz]
+%-----O U T P U T S------
+% monostatic_RCS = Column vector of monostatic RCSs seen from the
+different radar locations [m^2]
+%--> i n p u t s a j u s t a b l e s
+L=1;
+carrier_freq=3*10^9;
+num_scatters=10; %10 scatters in the scenario
+RCS_scatters=ones(1,num_scatters)*0.0000001; %dBsm RCSs close to 0 dBsm;
+RCS_scatters(8)=RCS_scatters(8)+17; %one scatter 17dB greater
+%coordinates of scatters DISTRIBUTED RANDOMLY
+circle_radius=10; %circle of 10m
+r_scatter=0+circle_radius*rand(1,num_scatters);
+theta_scatter=ones(1,num_scatters)*pi/2;
+phi_scatter=0+2*pi*rand(1,num_scatters);
+x_scatter=r_scatter.*sin(theta_scatter).*cos(phi_scatter);
+y_scatter=r_scatter.*sin(theta_scatter).*sin(phi_scatter);
+z_scatter=r_scatter.*cos(theta_scatter);
+scatters_rect_coord=[x_scatter; y_scatter; z_scatter]';
+%coordinates of radar positions
+r_gran=1000; %1km
+theta=pi/2; %-->horizontal plane
+phi=0:pi/1000:2*pi;%--> all angles of the horizontal plane
+%--> e x e c u c i ó
+for i=1:length(phi)
+    radar_sphere_coord(i,:)=[r_gran theta phi(i)];
 end
-for i=1:N_samples
-    anterior=sum(y(1:M/2,i));
-    posterior=sum(y(M/2+2:M,i));
-    suma_total(i)=sum([anterior posterior]);
-    llindar(:,i)=alpha./M*suma_total(i);
-end
-for j=1:length(alpha)
-    Pfa_counter(j)=0;
-    for i=1:N_samples
-        if(llindar(j,i)<y(M/2+1,i))
-            Pfa_vector(j,i)=1;
-            Pfa_counter(j)=Pfa_counter(j)+1;
-        else
-            Pfa_vector(j,i)=0;
-        end
-    end
-end
-CUT=y(M/2+1,:);
-Pfa_obtained=Pfa_counter/N_samples;
+monostatic_RCS=RCS_computation(RCS_scatters,scatters_rect_coord,radar_sphere_coord,carrier_freq);
+figure(3);
+histogram(monostatic_RCS,'Normalization','pdf'); %RCS [m^2]
+data_hist_1=histcounts(monostatic_RCS,'Normalization','pdf');
+ylabel('RCS probability density function');
+xlabel('RCS (m^2)');
+title(sprintf('PDF of RCS resulting from %g spheres with 0dBsm (except one 17dB greater) distributed randomly',num_scatters));
+figure(4);
+subplot(2,1,1)
+plot(phi,10*log10(monostatic_RCS)); %RCS [dBsm]
+xlabel('Phi angle (rad)');
+ylabel('RCS (dBsm)');
+subplot(2,1,2)
+polarplot(phi,monostatic_RCS); %RCS [m^2]
+suptitle(sprintf('Resulting RCS for %g spheres with 0dBsm (except one 17dB greater) distributed randomly',num_scatters));
