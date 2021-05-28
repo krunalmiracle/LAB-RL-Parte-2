@@ -13,7 +13,7 @@ for i=1:repetitions
     Pot=sum(abs(sample_noise(i,:)).^2)/N_samples;
     noise_2(i,:)=sqrt(pot_noise)*sample_noise(i,:)./sqrt(Pot);
     for j=2:N_samples
-        MTI_filter_single(i,j-1)=noise_2(i,j)-noise_2(i,j-1);
+        MTI_filter_single(i,j-1)=noise_2(i,j)-noise_2(i,j-1); %#ok<SAGROW>
     end
 end
 MTI_filter_single_meanvalues=mean(MTI_filter_single(:,(1:length(MTI_filter_single))));
