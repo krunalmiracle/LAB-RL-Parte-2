@@ -119,7 +119,7 @@ for i=1:length(P_fa)
     hold off;
     title(sprintf('CUT and threshold coexistance for probability of FA=%g',P_fa(i)));
 end
-FUNCTION: CFAR
+
 function [Pfa_obtained, llindar, CUT,Pfa_counter]=CFAR(M,N_samples,P_fa,noise)
     alpha=M*(1./(((P_fa).^(1/M)))-1);
     n_i=randn(M+1,N_samples);
