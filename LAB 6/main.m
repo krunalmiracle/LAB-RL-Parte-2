@@ -117,38 +117,37 @@ for i=1:length(P_fa)
     ylabel('Level of noise (dB)');
     legend('Threshold (dB)','CUT (dB)');
     hold off;
-    title(sprintf('CUT and threshold coexistance for probability of FA=
-    %g',P_fa(i)));
+    title(sprintf('CUT and threshold coexistance for probability of FA=%g',P_fa(i)));
 end
 FUNCTION: CFAR
-function [Pfa_obtained, llindar, CUT,
-    Pfa_counter]=CFAR(M,N_samples,P_fa,noise)
-alpha=M*(1./(((P_fa).^(1/M)))-1);
-n_i=randn(M+1,N_samples);
-n_q=randn(M+1,N_samples);
-for i=1:M+1
-    Pot_ni=sum(abs(n_i(i,:)).^2)/N_samples;
-    n_i_2=sqrt(noise).*n_i(i,:)/sqrt(Pot_ni);
-    Pot_nq=sum(abs(n_q(i,:)).^2)/N_samples;
-    n_q_2=sqrt(noise).*n_q(i,:)/sqrt(Pot_nq);
-    y(i,:)=n_q_2.^2+n_i_2.^2;
-end
-for i=1:N_samples
-    anterior=sum(y(1:M/2,i));
-    posterior=sum(y(M/2+2:M,i));
-    suma_total(i)=sum([anterior posterior]);
-    llindar(:,i)=alpha./M*suma_total(i);
-end
-for j=1:length(alpha)
-    Pfa_counter(j)=0;
+function [Pfa_obtained, llindar, CUT,Pfa_counter]=CFAR(M,N_samples,P_fa,noise)
+    alpha=M*(1./(((P_fa).^(1/M)))-1);
+    n_i=randn(M+1,N_samples);
+    n_q=randn(M+1,N_samples);
+    for i=1:M+1
+        Pot_ni=sum(abs(n_i(i,:)).^2)/N_samples;
+        n_i_2=sqrt(noise).*n_i(i,:)/sqrt(Pot_ni);
+        Pot_nq=sum(abs(n_q(i,:)).^2)/N_samples;
+        n_q_2=sqrt(noise).*n_q(i,:)/sqrt(Pot_nq);
+        y(i,:)=n_q_2.^2+n_i_2.^2;
+    end
     for i=1:N_samples
-        if(llindar(j,i)<y(M/2+1,i))
-            Pfa_vector(j,i)=1;
-            Pfa_counter(j)=Pfa_counter(j)+1;
-        else
-            Pfa_vector(j,i)=0;
+        anterior=sum(y(1:M/2,i));
+        posterior=sum(y(M/2+2:M,i));
+        suma_total(i)=sum([anterior posterior]);
+        llindar(:,i)=alpha./M*suma_total(i);
+    end
+    for j=1:length(alpha)
+        Pfa_counter(j)=0;
+        for i=1:N_samples
+            if(llindar(j,i)<y(M/2+1,i))
+                Pfa_vector(j,i)=1;
+                Pfa_counter(j)=Pfa_counter(j)+1;
+            else
+                Pfa_vector(j,i)=0;
+            end
         end
     end
+    CUT=y(M/2+1,:);
+    Pfa_obtained=Pfa_counter/N_samples;
 end
-CUT=y(M/2+1,:);
-Pfa_obtained=Pfa_counter/N_samples;
