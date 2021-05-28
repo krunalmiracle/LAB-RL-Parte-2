@@ -15,20 +15,17 @@ normal_incidence_RCS=10*log10((4*pi*area^2)/(lambda^2));
 %==============RCS COMPUTATION FUNCTION====================
 %-----I N P U T S------
 %RCS_scatters = Column vector of RCSs of spheres [dBsm=dBm2]
-%scatters_rect_coord = Matrix having the rectangular coordinates of the
-scatterers positions:
+%scatters_rect_coord = Matrix having the rectangular coordinates of the scatterers positions:
 % x-coordinates in first column [m]
 % y-coordinates in second column [m]
 % z-coordinates in third column [m]
-%radar_sphere_coord = Matrix having the spherical coordinates of the
-different radar locations
+%radar_sphere_coord = Matrix having the spherical coordinates of the different radar locations
 % r-coordinates in first column [m]
 % theta-coordinates in second column [rad]
 % phi-coordinates in third column [rad]
 %carrier_freq=Carrier frequency [Hz]
 %-----O U T P U T S------
-% monostatic_RCS = Column vector of monostatic RCSs seen from the
-different radar locations [m^2]
+% monostatic_RCS = Column vector of monostatic RCSs seen from the different radar locations [m^2]
 %==============FOR ONE VALUE OF L==========================
 %--> i n p u t s a j u s t a b l e s
 L=1; %-->electrical separation between scatters
@@ -39,7 +36,7 @@ scatters_rect_coord=[-L/2 0 0; L/2 0 0];
 %coordinates of radars
 r_gran=10^6;
 if(r_gran<(2*L^2)*carrier_freq/(3e8)) % condition to fulfill
-    r_gran<(2L^2/lambda)
+    r_gran<(2*L^2/lambda)
     disp('Distance between scatters and radar stations too small.');
 end
 theta=pi/2; %-->horizontal plane
@@ -50,13 +47,19 @@ for i=1:length(phi)
 end
 monostatic_RCS=RCS_computation(RCS_scatters,scatters_rect_coord,radar_sphere_coord,carrier_freq);
 figure(1);
+hold on;
 plot(phi,10*log10(monostatic_RCS)); %RCS [dBsm]
+hold on;
 xlabel('Phi angle (rad)');
+hold on;
 ylabel('RCS (dBsm)');
+hold on;
 str = sprintf('Resulting RCS for two spheres (1m^2) separated %0.2fm',L);
+hold on;
 title(str);
+hold off;
 figure(2);
-polarplot(phi,monostatic_RCS); %RCS [m^2]
+polarscatter(phi,monostatic_RCS); %RCS [m^2]
 str = sprintf('Resulting RCS for two spheres (1m^2) separated %0.2fm',L);
 title(str);
 %===============FOR DIFFERENT VALUES OF L=====================
@@ -90,20 +93,17 @@ end
 %==============RCS COMPUTATION FUNCTION====================
 %-----I N P U T S------
 %RCS_scatters = Column vector of RCSs of spheres [dBsm=dBm2]
-%scatters_rect_coord = Matrix having the rectangular coordinates of the
-scatterers positions:
+%scatters_rect_coord = Matrix having the rectangular coordinates of the scatterers positions:
 % x-coordinates in first column [m]
 % y-coordinates in second column [m]
 % z-coordinates in third column [m]
-%radar_sphere_coord = Matrix having the spherical coordinates of the
-different radar locations
+%radar_sphere_coord = Matrix having the spherical coordinates of the different radar locations
 % r-coordinates in first column [m]
 % theta-coordinates in second column [rad]
 % phi-coordinates in third column [rad]
 %carrier_freq=Carrier frequency [Hz]
 %-----O U T P U T S------
-% monostatic_RCS = Column vector of monostatic RCSs seen from the
-different radar locations [m^2]
+% monostatic_RCS = Column vector of monostatic RCSs seen from the different radar locations [m^2]
 %--> i n p u t s a j u s t a b l e s
 L=1;
 carrier_freq=3*10^9;
@@ -140,25 +140,22 @@ xlabel('Phi angle (rad)');
 ylabel('RCS (dBsm)');
 subplot(2,1,2)
 polarplot(phi,monostatic_RCS); %RCS [m^2]
-suptitle(sprintf('Resulting RCS for %g spheres with 0dBsm distributed randomly',num_scatters));
+subtitle(sprintf('Resulting RCS for %g spheres with 0dBsm distributed randomly',num_scatters));
 %% 5.6 Swerling model statistics III and IV
 %==============RCS COMPUTATION FUNCTION====================
 %-----I N P U T S------
 %RCS_scatters = Column vector of RCSs of spheres [dBsm=dBm2]
-%scatters_rect_coord = Matrix having the rectangular coordinates of the
-scatterers positions:
+%scatters_rect_coord = Matrix having the rectangular coordinates of the scatterers positions:
 % x-coordinates in first column [m]
 % y-coordinates in second column [m]
 % z-coordinates in third column [m]
-%radar_sphere_coord = Matrix having the spherical coordinates of the
-different radar locations
+%radar_sphere_coord = Matrix having the spherical coordinates of the different radar locations
 % r-coordinates in first column [m]
 % theta-coordinates in second column [rad]
 % phi-coordinates in third column [rad]
 %carrier_freq=Carrier frequency [Hz]
 %-----O U T P U T S------
-% monostatic_RCS = Column vector of monostatic RCSs seen from the
-different radar locations [m^2]
+% monostatic_RCS = Column vector of monostatic RCSs seen from the different radar locations [m^2]
 %--> i n p u t s a j u s t a b l e s
 L=1;
 carrier_freq=3*10^9;
@@ -196,4 +193,4 @@ xlabel('Phi angle (rad)');
 ylabel('RCS (dBsm)');
 subplot(2,1,2)
 polarplot(phi,monostatic_RCS); %RCS [m^2]
-suptitle(sprintf('Resulting RCS for %g spheres with 0dBsm (except one 17dB greater) distributed randomly',num_scatters));
+subtitle(sprintf('Resulting RCS for %g spheres with 0dBsm (except one 17dB greater) distributed randomly',num_scatters));

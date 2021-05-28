@@ -18,8 +18,7 @@ for i=1:repetitions
 end
 MTI_filter_single_meanvalues=mean(MTI_filter_single(:,(1:length(MTI_filter_single))));
 MTI_fft_single=abs(fft(MTI_filter_single,[],2));
-%MTI_mean_single1=sum(MTI_fft_single(:,(1:length(MTI_fft_single))))/re
-p;
+%MTI_mean_single1=sum(MTI_fft_single(:,(1:length(MTI_fft_single))))/rep;
 MTI_mean_single=mean(MTI_fft_single(:,(1:length(MTI_fft_single))));
 MTI_mean_max_single=max(MTI_mean_single);
 noise_meanvalues=mean(noise_2(:,(1:length(noise_2))));
@@ -74,8 +73,7 @@ for i=1:repetitions
 end
 MTI_filter_single_meanvalues=mean(MTI_filter_single(:,(1:length(MTI_filter_single))));
 MTI_fft_single=abs(fft(MTI_filter_single,[],2));
-%MTI_mean_single1=sum(MTI_fft_single(:,(1:length(MTI_fft_single))))/re
-p;
+%MTI_mean_single1=sum(MTI_fft_single(:,(1:length(MTI_fft_single))))/rep;
 MTI_mean_single=mean(MTI_fft_single(:,(1:length(MTI_fft_single))));
 MTI_mean_max_single=max(MTI_mean_single);
 noise_meanvalues=mean(noise_2(:,(1:length(noise_2))));
