@@ -6,8 +6,6 @@
 %       Chapman & Hall/CRC, 2005
 % Slightly modified by J.M. González-Arbesú
 %
-
-
 eps   = 0.00001;
 index = 0;
 % kr limits are [0.05 - 15] ===> 300 points
